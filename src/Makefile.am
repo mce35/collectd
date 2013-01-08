@@ -322,6 +322,16 @@ collectd_LDADD += "-dlopen" curl_xml.la
 collectd_DEPENDENCIES += curl_xml.la
 endif
 
+if BUILD_PLUGIN_CURRENT_COST
+pkglib_LTLIBRARIES += current_cost.la
+current_cost_la_SOURCES = current_cost.c
+current_cost_la_CPPFLAGS = $(AM_CPPFLAGS)
+current_cost_la_LDFLAGS = -module -avoid-version
+current_cost_la_LIBADD = -lm -lsqlite3
+collectd_LDADD += "-dlopen" current_cost.la
+collectd_DEPENDENCIES += current_cost.la
+endif
+
 if BUILD_PLUGIN_DBI
 pkglib_LTLIBRARIES += dbi.la
 dbi_la_SOURCES = dbi.c \
