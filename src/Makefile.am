@@ -33,6 +33,7 @@ collectd_SOURCES = collectd.c collectd.h \
 		   utils_ignorelist.c utils_ignorelist.h \
 		   utils_llist.c utils_llist.h \
 		   utils_parse_option.c utils_parse_option.h \
+		   utils_random.c utils_random.h \
 		   utils_tail_match.c utils_tail_match.h \
 		   utils_match.c utils_match.h \
 		   utils_subst.c utils_subst.h \
@@ -90,6 +91,7 @@ collectdmon_SOURCES = collectdmon.c
 collectdmon_CPPFLAGS = $(AM_CPPFLAGS)
 
 collectd_nagios_SOURCES = collectd-nagios.c
+collectd_nagios_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_builddir)/src/libcollectdclient/collectd
 collectd_nagios_LDADD =
 if BUILD_WITH_LIBSOCKET
 collectd_nagios_LDADD += -lsocket
@@ -103,6 +105,7 @@ collectd_nagios_DEPENDENCIES = libcollectdclient/libcollectdclient.la
 
 
 collectdctl_SOURCES = collectdctl.c
+collectdctl_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_builddir)/src/libcollectdclient/collectd
 collectdctl_LDADD =
 if BUILD_WITH_LIBSOCKET
 collectdctl_LDADD += -lsocket
@@ -115,6 +118,7 @@ collectdctl_DEPENDENCIES = libcollectdclient/libcollectdclient.la
 
 collectd_tg_SOURCES = collectd-tg.c \
 		      utils_heap.c utils_heap.h
+collectd_tg_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_builddir)/src/libcollectdclient/collectd
 collectd_tg_LDADD =
 if BUILD_WITH_LIBSOCKET
 collectd_tg_LDADD += -lsocket
@@ -1118,6 +1122,14 @@ tail_la_SOURCES = tail.c
 tail_la_LDFLAGS = -module -avoid-version
 collectd_LDADD += "-dlopen" tail.la
 collectd_DEPENDENCIES += tail.la
+endif
+
+if BUILD_PLUGIN_TAIL_CSV
+pkglib_LTLIBRARIES += tail_csv.la
+tail_csv_la_SOURCES = tail_csv.c
+tail_csv_la_LDFLAGS = -module -avoid-version
+collectd_LDADD += "-dlopen" tail_csv.la
+collectd_DEPENDENCIES += tail_csv.la
 endif
 
 if BUILD_PLUGIN_TAPE
