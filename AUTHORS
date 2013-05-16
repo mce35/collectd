@@ -47,6 +47,9 @@ Bruno Prémont <bonbons at linux-vserver.org>
    especially a nasty bug in the network plugin.
  - Wireshark dissector.
 
+Chad Malfait <malfaitc at yahoo.com>
+ - LVM plugin.
+
 Chris Lundquist <clundquist at bluebox.net>
  - Improvements to the write_mongodb plugin.
 
@@ -126,6 +129,7 @@ Michael Hanselmann <public at hansmi.ch>
 
 Michael Stapelberg <michael+git at stapelberg.de>
  - OpenBSD port of the tcpconns plugin.
+ - cgroups plugin.
 
 Michał Mirosław <mirq-linux at rere.qmqm.pl>
  - thermal plugin.

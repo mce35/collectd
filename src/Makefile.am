@@ -136,7 +136,7 @@ collectd_tg_DEPENDENCIES = libcollectdclient/libcollectdclient.la
 pkglib_LTLIBRARIES = 
 
 BUILT_SOURCES = 
-CLEANFILES = 
+CLEANFILES =
 
 if BUILD_PLUGIN_AGGREGATION
 pkglib_LTLIBRARIES += aggregation.la
@@ -228,6 +228,14 @@ bind_la_CFLAGS = $(AM_CFLAGS) \
 bind_la_LIBADD = $(BUILD_WITH_LIBCURL_LIBS) $(BUILD_WITH_LIBXML2_LIBS)
 collectd_LDADD += "-dlopen" bind.la
 collectd_DEPENDENCIES += bind.la
+endif
+
+if BUILD_PLUGIN_CGROUPS
+pkglib_LTLIBRARIES += cgroups.la
+cgroups_la_SOURCES = cgroups.c utils_mount.c utils_mount.h
+cgroups_la_LDFLAGS = -module -avoid-version
+collectd_LDADD += "-dlopen" cgroups.la
+collectd_DEPENDENCIES += cgroups.la
 endif
 
 if BUILD_PLUGIN_CONNTRACK
@@ -578,6 +586,15 @@ collectd_DEPENDENCIES += lpar.la
 lpar_la_LIBADD = -lperfstat
 endif
 
+if BUILD_PLUGIN_LVM
+pkglib_LTLIBRARIES += lvm.la
+lvm_la_SOURCES = lvm.c
+lvm_la_LDFLAGS = -module -avoid-version
+lvm_la_LIBADD = $(BUILD_WITH_LIBLVM2APP_LIBS)
+collectd_LDADD += "-dlopen" lvm.la
+collectd_DEPENDENCIES += lvm.la
+endif
+
 if BUILD_PLUGIN_MADWIFI
 pkglib_LTLIBRARIES += madwifi.la
 madwifi_la_SOURCES = madwifi.c madwifi.h
@@ -924,10 +941,9 @@ collectd_DEPENDENCIES += pf.la
 endif
 
 if BUILD_PLUGIN_PINBA
-BUILT_SOURCES += pinba.pb-c.c pinba.pb-c.h
-CLEANFILES += pinba.pb-c.c pinba.pb-c.h
 pkglib_LTLIBRARIES += pinba.la
 pinba_la_SOURCES = pinba.c
+nodist_pinba_la_SOURCES = pinba.pb-c.c pinba.pb-c.h
 pinba_la_LDFLAGS = -module -avoid-version
 pinba_la_LIBADD = -lprotobuf-c
 collectd_LDADD += "-dlopen" pinba.la
@@ -1372,10 +1388,9 @@ collectd_DEPENDENCIES += write_redis.la
 endif
 
 if BUILD_PLUGIN_WRITE_RIEMANN
-BUILT_SOURCES += riemann.pb-c.c riemann.pb-c.h
-CLEANFILES += riemann.pb-c.c riemann.pb-c.h
 pkglib_LTLIBRARIES += write_riemann.la
-write_riemann_la_SOURCES = write_riemann.c riemann.pb-c.c
+write_riemann_la_SOURCES = write_riemann.c
+nodist_write_riemann_la_SOURCES = riemann.pb-c.c riemann.pb-c.h
 write_riemann_la_LDFLAGS = -module -avoid-version
 write_riemann_la_LIBADD = -lprotobuf-c
 collectd_LDADD += "-dlopen" write_riemann.la
@@ -1422,7 +1437,7 @@ dist_man_MANS = collectd.1 \
 
 #collectd_1_SOURCES = collectd.pod
 
-EXTRA_DIST = types.db pinba.proto riemann.proto
+EXTRA_DIST = types.db
 
 EXTRA_DIST +=   collectd.conf.pod \
 		collectd-email.pod \
@@ -1457,11 +1472,26 @@ EXTRA_DIST +=   collectd.conf.pod \
 		echo "$@ has some POD errors!"; false; \
 	fi
 
+# Protocol buffer for the "pinba" plugin.
+EXTRA_DIST += pinba.proto
+if HAVE_PROTOC_C
+CLEANFILES += pinba.pb-c.c pinba.pb-c.h
+BUILT_SOURCES += pinba.pb-c.c pinba.pb-c.h
+
 pinba.pb-c.c pinba.pb-c.h: pinba.proto
 	protoc-c -I$(srcdir) --c_out . $(srcdir)/pinba.proto
+endif
+
+# Protocol buffer for the "write_riemann" plugin.
+EXTRA_DIST += riemann.proto
+if HAVE_PROTOC_C
+CLEANFILES += riemann.pb-c.c riemann.pb-c.h
+
+BUILT_SOURCES += riemann.pb-c.c riemann.pb-c.h
 
 riemann.pb-c.c riemann.pb-c.h: riemann.proto
 	protoc-c -I$(srcdir) --c_out . $(srcdir)/riemann.proto
+endif
 
 install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(sysconfdir)
