@@ -62,14 +62,27 @@ static void close_device(CurrentCostData *data)
   data->device_fd = -1;
 }
 
-static int reopen_device(CurrentCostData *data)
+static int reopen_device(CurrentCostData *data, unsigned int max_retries)
 {
   struct termios options;
+  unsigned int retries;
 
   if(data->device_fd >= 0)
     close_device(data);
 
-  data->device_fd = open(data->device, O_RDONLY | O_NOCTTY);
+  retries = 0;
+  while(retries < max_retries)
+    {
+      data->device_fd = open(data->device, O_RDONLY | O_NOCTTY);
+      if(data->device_fd >= 0)
+	break;
+      retries++;
+      if(retries < max_retries)
+	{
+	  ERROR("current_cost plugin: failed to open device (try %i) '%s': %s, next try in 5s", retries, data->device, strerror(errno));
+	  sleep(5);
+	}
+    }
   if(data->device_fd < 0)
     {
       ERROR("current_cost plugin: failed to open device '%s': %s", data->device, strerror(errno));
@@ -142,7 +155,7 @@ static void *cc_thread(CurrentCostData *data)
 	{
 	  ERROR("current_cost plugin: device read error: %s", strerror(errno));
 	  ERROR("current_cost plugin: reopening device");
-	  if(reopen_device(data) == 0)
+	  if(reopen_device(data, 100) == 0)
 	      continue;
 	  ERROR("current_cost plugin: reopen failed, aborting");
 	  break;
@@ -150,7 +163,7 @@ static void *cc_thread(CurrentCostData *data)
       else if(n == 0)
 	{
 	  ERROR("current_cost plugin: no data for 20s, reopening device");
-	  if(reopen_device(data) == 0)
+	  if(reopen_device(data, 100) == 0)
 	    continue;
 	  ERROR("current_cost plugin: reopen failed, aborting");
 	  break;
@@ -161,7 +174,7 @@ static void *cc_thread(CurrentCostData *data)
 	  if(n <= 0)
 	    {
 	      WARNING("current_cost plugin: read failed (%s), reopening device", strerror(errno));
-	      if(reopen_device(data) == 0)
+	      if(reopen_device(data, 100) == 0)
 		continue;
 	      ERROR("current_cost plugin: reopen failed, aborting");
 	      break;
@@ -266,7 +279,7 @@ static int cc_init(void)
   if(gdata.device[0] == 0)
     sstrncpy(gdata.device, "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0", sizeof(gdata.device));
 
-  if(reopen_device(&gdata) != 0)
+  if(reopen_device(&gdata, 100) != 0)
     {
       ERROR("current_cost plugin: no device found");
       return -1;
@@ -324,7 +337,7 @@ static int cc_read(void)
   for(i = 0; i < MAX_SENSORS; i++)
     {
       if(data->last_update[i] > min_time)
-	  submit(3 * i + 0, "power", data->watts[i]);
+	  submit(i, "power", data->watts[i]);
     }
   pthread_mutex_unlock(&data->lock);
 
